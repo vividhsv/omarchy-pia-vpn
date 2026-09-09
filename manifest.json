@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "pia.omarchy",
+  "name": "PIA VPN for Omarchy",
+  "version": "0.1.0",
+  "author": "PIA VPN for Omarchy contributors",
+  "license": "MIT",
+  "description": "Omarchy bar plugin for Private Internet Access. Wraps the official PIA daemon through piactl.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "PIA VPN",
+    "description": "VPN status, region selection, and connection controls for Private Internet Access.",
+    "category": "Network",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 8
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 3,
+        "max": 120,
+        "step": 1,
+        "defaultValue": 8
+      }
+    ]
+  }
+}
