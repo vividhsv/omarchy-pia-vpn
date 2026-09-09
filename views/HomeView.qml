@@ -30,13 +30,14 @@ Column {
       meta: homePage.vpnState ? homePage.vpnState.statusText : "Checking…"
       foreground: homePage.foreground
       fontFamily: homePage.fontFamily
-      iconOpacity: homePage.vpnState && homePage.vpnState.connected ? 1.0 : 0.55
+      iconOpacity: 1.0
       iconComponent: Component {
         PiaIcon {
           iconSize: Style.font.display
           statusColor: homePage.vpnState && homePage.vpnState.connected
             ? Model.connectedColor()
             : homePage.foreground
+          surfaceColor: Color.popups.background
           state: homePage.vpnState ? homePage.vpnState.statusIconState : "disconnected"
         }
       }
@@ -112,15 +113,6 @@ Column {
     fontFamily: homePage.fontFamily
     bordered: true
     onClicked: homePage.locationsRequested()
-  }
-
-  Button {
-    visible: homePage.vpnState && homePage.vpnState.installed
-    width: parent.width
-    text: "Enable background mode"
-    foreground: homePage.foreground
-    fontFamily: homePage.fontFamily
-    onClicked: if (homePage.vpnState) homePage.vpnState.enableBackground()
   }
 
   component InfoPair: Column {
