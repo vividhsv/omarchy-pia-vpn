@@ -107,7 +107,7 @@ FocusScope {
         }
       }
 
-      Row {
+      RowLayout {
         visible: !root.inputViewVisible
         width: parent.width
         spacing: Style.space(6)
@@ -116,6 +116,8 @@ FocusScope {
           model: root.navigationDestinations
           Button {
             required property var modelData
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
             text: modelData.label
             foreground: root.foreground
             fontFamily: root.fontFamily
