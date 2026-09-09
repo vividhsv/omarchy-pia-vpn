@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
-import "Model.js" as Model
 
 BarWidget {
   id: root
@@ -13,9 +12,7 @@ BarWidget {
   property bool pendingOpen: false
   property string pendingRoute: ""
 
-  readonly property color statusColor: piaState.connected
-    ? Model.connectedColor()
-    : (bar ? bar.barForeground : Color.foreground)
+  readonly property color statusColor: bar ? bar.barForeground : Color.foreground
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item
     ? panelLoader.item.popoutSwitchClosing === true
@@ -125,10 +122,14 @@ BarWidget {
     bar: root.bar
     tooltipText: "PIA VPN — " + piaState.statusText
     iconComponent: Component {
-      PiaIcon {
-        anchors.fill: parent
-        statusColor: root.statusColor
-        state: piaState.statusIconState
+      Item {
+        PiaIcon {
+          anchors.centerIn: parent
+          iconSize: parent.width
+          statusColor: root.statusColor
+          surfaceColor: root.bar ? root.bar.background : Color.bar.background
+          state: piaState.statusIconState
+        }
       }
     }
 

@@ -7,6 +7,7 @@ Item {
 
   property real iconSize: Style.font.icon
   property color statusColor: Color.foreground
+  property color surfaceColor: Color.background
   property string state: "disconnected"
 
   width: iconSize
@@ -23,31 +24,30 @@ Item {
     opacity: root.opacityForState
 
     Shape {
+      id: shield
       anchors.fill: parent
       antialiasing: true
-      layer.enabled: true
-      layer.samples: 4
-      scale: 0.92
+      preferredRendererType: Shape.CurveRenderer
 
       ShapePath {
         fillColor: root.statusColor
         strokeWidth: 0
-        startX: root.width * 0.50
-        startY: root.height * 0.06
-        PathLine { x: root.width * 0.88; y: root.height * 0.22 }
-        PathLine { x: root.width * 0.88; y: root.height * 0.52 }
+        startX: shield.width * 0.50
+        startY: shield.height * 0.06
+        PathLine { x: shield.width * 0.88; y: shield.height * 0.22 }
+        PathLine { x: shield.width * 0.88; y: shield.height * 0.52 }
         PathCubic {
-          x: root.width * 0.50; y: root.height * 0.94
-          control1X: root.width * 0.88; control1Y: root.height * 0.74
-          control2X: root.width * 0.70; control2Y: root.height * 0.88
+          x: shield.width * 0.50; y: shield.height * 0.94
+          control1X: shield.width * 0.88; control1Y: shield.height * 0.74
+          control2X: shield.width * 0.70; control2Y: shield.height * 0.88
         }
         PathCubic {
-          x: root.width * 0.12; y: root.height * 0.52
-          control1X: root.width * 0.30; control1Y: root.height * 0.88
-          control2X: root.width * 0.12; control2Y: root.height * 0.74
+          x: shield.width * 0.12; y: shield.height * 0.52
+          control1X: shield.width * 0.30; control1Y: shield.height * 0.88
+          control2X: shield.width * 0.12; control2Y: shield.height * 0.74
         }
-        PathLine { x: root.width * 0.12; y: root.height * 0.22 }
-        PathLine { x: root.width * 0.50; y: root.height * 0.06 }
+        PathLine { x: shield.width * 0.12; y: shield.height * 0.22 }
+        PathLine { x: shield.width * 0.50; y: shield.height * 0.06 }
       }
     }
 
@@ -59,7 +59,7 @@ Item {
       width: root.width * 0.22
       height: root.width * 0.22
       radius: width / 2
-      color: Color.background
+      color: root.surfaceColor
       opacity: 0.9
     }
 
@@ -68,7 +68,7 @@ Item {
       width: root.width * 0.10
       height: root.height * 0.78
       radius: width / 2
-      color: Color.background
+      color: root.surfaceColor
       rotation: 38
       anchors.centerIn: parent
     }

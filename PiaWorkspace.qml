@@ -3,7 +3,6 @@ import QtQuick.Layouts
 import qs.Commons
 import qs.Ui
 import "views"
-import "Model.js" as Model
 
 FocusScope {
   id: root
@@ -48,7 +47,7 @@ FocusScope {
     else keyCatcher.forceActiveFocus()
   }
 
-  implicitHeight: chrome.implicitHeight + Style.space(8) + pageColumn.implicitHeight
+  implicitHeight: chrome.implicitHeight
   width: parent ? parent.width : implicitWidth
 
   PanelKeyCatcher {
@@ -71,66 +70,14 @@ FocusScope {
       if (root.installerVisible && vpnState) vpnState.installBackend()
     }
 
-    Column {
+    ColumnLayout {
       id: chrome
-      width: parent.width
+      anchors.fill: parent
       spacing: Style.space(8)
-
-      RowLayout {
-        width: parent.width
-        spacing: Style.space(8)
-
-        PiaIcon {
-          iconSize: Style.font.iconLarge
-          statusColor: root.vpnState && root.vpnState.connected
-            ? Model.connectedColor()
-            : root.foreground
-          state: root.vpnState ? root.vpnState.statusIconState : "disconnected"
-        }
-
-        Text {
-          Layout.fillWidth: true
-          textFormat: Text.PlainText
-          text: "PIA VPN"
-          color: root.foreground
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.title
-          font.weight: Font.DemiBold
-        }
-
-        PanelActionButton {
-          iconText: "✕"
-          tooltipText: "Close"
-          foreground: root.foreground
-          fontFamily: root.fontFamily
-          onClicked: root.closeRequested()
-        }
-      }
-
-      RowLayout {
-        visible: !root.inputViewVisible
-        width: parent.width
-        spacing: Style.space(6)
-
-        Repeater {
-          model: root.navigationDestinations
-          Button {
-            required property var modelData
-            Layout.fillWidth: true
-            Layout.preferredWidth: 1
-            text: modelData.label
-            foreground: root.foreground
-            fontFamily: root.fontFamily
-            fontSize: Style.font.caption
-            selected: root.selectedRoot === modelData.route
-            onClicked: root.setRoute(modelData.route)
-          }
-        }
-      }
 
       Text {
         visible: root.vpnState && (root.vpnState.actionStatus !== "" || root.vpnState.lastError !== "")
-        width: parent.width
+        Layout.fillWidth: true
         textFormat: Text.PlainText
         text: root.vpnState && root.vpnState.actionStatus !== ""
           ? root.vpnState.actionStatus
@@ -144,8 +91,9 @@ FocusScope {
 
       Flickable {
         id: viewport
-        width: parent.width
-        height: Math.min(pageColumn.implicitHeight, Style.space(480))
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.minimumHeight: 0
         contentWidth: width
         contentHeight: pageColumn.implicitHeight
         clip: true
@@ -170,6 +118,27 @@ FocusScope {
               default: return homeComponent
               }
             }
+          }
+        }
+      }
+
+      RowLayout {
+        visible: !root.inputViewVisible
+        Layout.fillWidth: true
+        spacing: Style.space(6)
+
+        Repeater {
+          model: root.navigationDestinations
+          Button {
+            required property var modelData
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            text: modelData.label
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+            fontSize: Style.font.caption
+            selected: root.selectedRoot === modelData.route
+            onClicked: root.setRoute(modelData.route)
           }
         }
       }
