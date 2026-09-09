@@ -1,5 +1,9 @@
 .pragma library
 
+function connectedColor() {
+  return "#3d9a5f"
+}
+
 function trim(value) {
   return String(value || "").replace(/^\s+|\s+$/g, "")
 }
@@ -14,8 +18,8 @@ function parseStatus(raw) {
     vpnIp: "",
     pubIp: "",
     protocol: "",
-    requestPortForward: false,
-    allowLan: false,
+    requestPortForward: null,
+    allowLan: null,
     portForward: "",
     loggedIn: false,
     username: "",
@@ -40,8 +44,14 @@ function parseStatus(raw) {
     else if (key === "vpnip") result.vpnIp = value
     else if (key === "pubip") result.pubIp = value
     else if (key === "protocol") result.protocol = value
-    else if (key === "requestportforward") result.requestPortForward = value === "true"
-    else if (key === "allowlan") result.allowLan = value === "true"
+    else if (key === "requestportforward") {
+      if (value === "true") result.requestPortForward = true
+      else if (value === "false") result.requestPortForward = false
+    }
+    else if (key === "allowlan") {
+      if (value === "true") result.allowLan = true
+      else if (value === "false") result.allowLan = false
+    }
     else if (key === "portforward") result.portForward = value
     else if (key === "loggedin") result.loggedIn = value === "true"
     else if (key === "username") result.username = value
@@ -92,6 +102,11 @@ function isConnecting(state) {
 
 function isDisconnecting(state) {
   return String(state || "") === "Disconnecting"
+}
+
+function isDisconnected(state) {
+  var value = String(state || "")
+  return value === "Disconnected" || value === "Interrupted"
 }
 
 function displayState(state) {

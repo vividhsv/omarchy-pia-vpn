@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import qs.Commons
 import qs.Ui
 import "views"
+import "Model.js" as Model
 
 FocusScope {
   id: root
@@ -81,7 +82,9 @@ FocusScope {
 
         PiaIcon {
           iconSize: Style.font.iconLarge
-          statusColor: root.foreground
+          statusColor: root.vpnState && root.vpnState.connected
+            ? Model.connectedColor()
+            : root.foreground
           state: root.vpnState ? root.vpnState.statusIconState : "disconnected"
         }
 

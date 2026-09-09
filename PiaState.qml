@@ -27,26 +27,20 @@ Item {
   property string actionStatus: ""
   property bool refreshing: false
   property int _desired: -1
+  property bool _stableConnected: false
+  property bool _statusValid: true
 
   readonly property int refreshIntervalSec: intSetting("refreshIntervalSec", 8, 3, 120)
-  readonly property bool connected: _desired === -1 ? Model.isConnected(connectionState) : (_desired === 1)
-  readonly property bool connecting: Model.isConnecting(connectionState) || (_desired === 1 && !Model.isConnected(connectionState))
-  readonly property bool disconnecting: Model.isDisconnecting(connectionState) || (_desired === 0 && Model.isConnected(connectionState))
+  readonly property bool connected: _desired === -1 ? _stableConnected : (_desired === 1)
+  readonly property bool connecting: _desired === 1 && !_stableConnected
+  readonly property bool disconnecting: _desired === 0 && _stableConnected
   readonly property string statusText: {
     if (!installed) return "Not installed"
-    if (actionStatus !== "") return actionStatus
     if (!loggedIn) return "Signed out"
-    if (_desired === 1 && !Model.isConnected(connectionState)) return "Connecting"
-    if (_desired === 0 && Model.isConnected(connectionState)) return "Disconnecting"
-    return Model.displayState(connectionState)
+    return connected ? "Connected" : "Disconnected"
   }
-  readonly property string statusIconState: {
-    if (connected) return "connected"
-    if (connecting || disconnecting) return "connecting"
-    return "disconnected"
-  }
-  readonly property bool busy: statusProcess.running
-    || actionProcess.running || loginProcess.running || regionsProcess.running
+  readonly property string statusIconState: connected ? "connected" : "disconnected"
+  readonly property bool busy: actionProcess.running || loginProcess.running || regionsProcess.running
   readonly property bool killswitchKnown: killswitch !== ""
   readonly property string regionLabel: Model.regionLabel(region)
   readonly property string protocolLabel: Model.protocolLabel(protocol)
@@ -97,8 +91,9 @@ Item {
   }
 
   function refresh() {
-    if (statusProcess.running) return
+    if (statusProcess.running || actionProcess.running || loginProcess.running) return
     _statusOutput = ""
+    _statusValid = true
     refreshing = true
     statusProcess.command = ["python3", statusScript()]
     statusProcess.running = true
@@ -112,23 +107,27 @@ Item {
       return
     }
     piactlPath = parsed.piactl || piactlPath
-    connectionState = parsed.connectionState || "Unknown"
+    if (parsed.connectionState !== "") connectionState = parsed.connectionState
+    if (Model.isConnected(connectionState)) _stableConnected = true
+    else if (Model.isDisconnected(connectionState)) _stableConnected = false
     region = parsed.region
     vpnIp = parsed.vpnIp === "Unknown" ? "" : parsed.vpnIp
     pubIp = parsed.pubIp === "Unknown" ? "" : parsed.pubIp
-    protocol = parsed.protocol
-    requestPortForward = parsed.requestPortForward === true
-    allowLan = parsed.allowLan === true
-    portForward = parsed.portForward
+    if (parsed.protocol !== "") protocol = parsed.protocol
+    if (parsed.requestPortForward === true || parsed.requestPortForward === false)
+      requestPortForward = parsed.requestPortForward
+    if (parsed.allowLan === true || parsed.allowLan === false)
+      allowLan = parsed.allowLan
+    if (parsed.portForward !== "") portForward = parsed.portForward
     loggedIn = parsed.loggedIn === true
       || Model.isConnected(parsed.connectionState)
       || Model.isConnecting(parsed.connectionState)
+      || _stableConnected
     username = parsed.username
     killswitch = parsed.killswitch
     if (_desired !== -1) {
-      if (_desired === 1 && Model.isConnected(connectionState)) _desired = -1
-      if (_desired === 0 && !Model.isConnected(connectionState) && !Model.isDisconnecting(connectionState))
-        _desired = -1
+      if (_desired === 1 && _stableConnected) _desired = -1
+      if (_desired === 0 && !_stableConnected) _desired = -1
     }
     lastError = ""
   }
@@ -149,25 +148,26 @@ Item {
     killswitch = ""
     regions = []
     _desired = -1
+    _stableConnected = false
     lastError = message || ""
   }
 
   function toggleConnection() {
-    if (!installed || !loggedIn || busy) return
-    if (connected || connecting) disconnectVpn()
+    if (!installed || !loggedIn || actionProcess.running) return
+    if (connected) disconnectVpn()
     else connectVpn()
   }
 
   function connectVpn() {
     if (!installed || !loggedIn || actionProcess.running) return
     _desired = 1
-    runAction([piactl(), "connect"], "Connecting…")
+    runAction([piactl(), "connect"])
   }
 
   function disconnectVpn() {
     if (!installed || actionProcess.running) return
     _desired = 0
-    runAction([piactl(), "disconnect"], "Disconnecting…")
+    runAction([piactl(), "disconnect"])
   }
 
   function logout() {
@@ -208,14 +208,13 @@ Item {
   function setRequestPortForward(enabled) {
     if (!installed || actionProcess.running) return
     requestPortForward = enabled === true
-    runAction([piactl(), "set", "requestportforward", enabled ? "true" : "false"],
-              "Updating port forwarding…")
+    runAction([piactl(), "set", "requestportforward", enabled ? "true" : "false"])
   }
 
   function setAllowLan(enabled) {
     if (!installed || actionProcess.running) return
     allowLan = enabled === true
-    runAction([piactl(), "set", "allowlan", enabled ? "true" : "false"], "Updating LAN policy…")
+    runAction([piactl(), "set", "allowlan", enabled ? "true" : "false"])
   }
 
   function cycleKillswitch() {
@@ -262,6 +261,11 @@ Item {
 
   function runAction(command, label) {
     if (actionProcess.running) return
+    if (statusProcess.running) {
+      _statusValid = false
+      statusProcess.running = false
+      refreshing = false
+    }
     _actionOutput = ""
     _actionError = ""
     actionStatus = label || ""
@@ -315,9 +319,10 @@ Item {
     onStarted: pollWatchdog.restart()
     onExited: function(exitCode) {
       root.refreshing = false
+      if (!root._statusValid) return
       var stdout = String(statusStdout.text || root._statusOutput || "")
       if (exitCode === 0) root.applyStatus(stdout)
-      else {
+      else if (!root.installed) {
         root.resetMissing("Could not read piactl status")
         root.lastError = Model.elide(stdout || "piactl status failed")
       }

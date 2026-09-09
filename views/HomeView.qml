@@ -25,27 +25,61 @@ Column {
     PanelHero {
       id: hero
       width: parent.width
+      height: implicitHeight
       title: "PIA VPN"
       meta: homePage.vpnState ? homePage.vpnState.statusText : "Checking…"
-      detail: homePage.vpnState && homePage.vpnState.connected ? "On" : "Off"
       foreground: homePage.foreground
       fontFamily: homePage.fontFamily
       iconOpacity: homePage.vpnState && homePage.vpnState.connected ? 1.0 : 0.55
       iconComponent: Component {
         PiaIcon {
           iconSize: Style.font.display
-          statusColor: homePage.foreground
+          statusColor: homePage.vpnState && homePage.vpnState.connected
+            ? Model.connectedColor()
+            : homePage.foreground
           state: homePage.vpnState ? homePage.vpnState.statusIconState : "disconnected"
         }
       }
       trailingControl: Component {
-        ToggleSwitch {
-          id: powerSwitch
-          visible: homePage.vpnState && homePage.vpnState.installed && homePage.vpnState.loggedIn
-          checked: homePage.vpnState ? homePage.vpnState.connected : false
-          busy: homePage.vpnState ? homePage.vpnState.busy : false
-          foreground: hero.foreground
-          onToggled: if (homePage.vpnState) homePage.vpnState.toggleConnection()
+        Row {
+          id: statusRow
+          readonly property bool connected: homePage.vpnState && homePage.vpnState.connected
+          spacing: Style.space(8)
+
+          BorderSurface {
+            implicitWidth: detailText.implicitWidth + Style.space(10)
+            implicitHeight: detailText.implicitHeight + Style.space(4)
+            anchors.verticalCenter: parent.verticalCenter
+            color: "transparent"
+            borderSpec: statusRow.connected
+              ? Border.flat(Model.connectedColor(), Style.normalBorderWidth)
+              : Border.controlSpec("normal", hero.foreground, Color.accent)
+            radius: Style.cornerRadius
+
+            Text {
+              id: detailText
+              textFormat: Text.PlainText
+              anchors.centerIn: parent
+              text: statusRow.connected ? "On" : "Off"
+              color: statusRow.connected
+                ? Model.connectedColor()
+                : Qt.darker(hero.foreground, 1.4)
+              font.family: homePage.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+            }
+          }
+
+          PiaPowerSwitch {
+            id: powerSwitch
+            visible: homePage.vpnState && homePage.vpnState.installed && homePage.vpnState.loggedIn
+            anchors.verticalCenter: parent.verticalCenter
+            checked: homePage.vpnState ? homePage.vpnState.connected : false
+            busy: homePage.vpnState ? homePage.vpnState.busy : false
+            foreground: hero.foreground
+            cursorRing: false
+            onToggled: if (homePage.vpnState) homePage.vpnState.toggleConnection()
+          }
         }
       }
     }

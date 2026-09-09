@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Commons
 import qs.Ui
+import ".."
 import "../Model.js" as Model
 
 Column {
@@ -73,7 +74,7 @@ Column {
 
   PanelSeparator { foreground: root.foreground }
 
-  Toggle {
+  PiaToggle {
     width: parent.width
     label: "Request port forwarding"
     description: "Asks PIA for a forwarded port on the next connect. Unavailable in the United States."
@@ -93,7 +94,7 @@ Column {
     font.pixelSize: Style.font.bodySmall
   }
 
-  Toggle {
+  PiaToggle {
     width: parent.width
     label: "Allow LAN"
     description: "Let local network traffic bypass the tunnel."
