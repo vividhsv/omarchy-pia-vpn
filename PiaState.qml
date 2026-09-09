@@ -125,7 +125,8 @@ Item {
       || _stableConnected
     username = parsed.username
     killswitch = parsed.killswitch
-    if (_desired !== -1) {
+    if (!loggedIn) _desired = -1
+    else if (_desired !== -1) {
       if (_desired === 1 && _stableConnected) _desired = -1
       if (_desired === 0 && !_stableConnected) _desired = -1
     }
@@ -159,7 +160,13 @@ Item {
   }
 
   function connectVpn() {
-    if (!installed || !loggedIn || actionProcess.running) return
+    if (!installed || !loggedIn || actionProcess.running) {
+      if (!actionProcess.running) {
+        _desired = -1
+        delayedRefresh.restart()
+      }
+      return
+    }
     _desired = 1
     runAction([piactl(), "connect"])
   }
