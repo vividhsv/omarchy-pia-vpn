@@ -46,7 +46,7 @@ Column {
   Text {
     width: parent.width
     textFormat: Text.PlainText
-    text: "Version 0.1.0 · MIT License"
+    text: "Version 1.0.0 · MIT License"
     color: root.dim
     font.family: root.fontFamily
     font.pixelSize: Style.font.bodySmall
