@@ -5,7 +5,7 @@ A native Omarchy Quattro bar plugin for [Private Internet Access](https://privat
 This is an independent community project. It is **not affiliated with, endorsed by, or supported by** Private Internet Access, Inc. or Omarchy.
 
 <p align="center">
-  <img src="screenshot.png" alt="PIA VPN Home panel, connected" width="360">
+  <img src="preview.png" alt="PIA VPN Home panel, connected" width="360">
 </p>
 
 ## Features
@@ -32,7 +32,13 @@ This is an independent community project. It is **not affiliated with, endorsed 
 omarchy plugin add https://github.com/vividhsv/omarchy-pia-vpn.git --enable
 ```
 
-Omarchy warns before enabling third-party plugins because they run inside the shell process. Read the source first.
+Omarchy warns before enabling third-party plugins because they run inside the shell process. Read the source first. Run this from an interactive terminal so you can pick a bar section; **right** is the default.
+
+To move an existing install:
+
+```bash
+omarchy bar move pia.omarchy --section right
+```
 
 Open the PIA icon and choose **Install PIA backend** if `piactl` is missing. That opens a terminal that runs:
 
@@ -65,6 +71,12 @@ Saving QML under `~/.config/omarchy/plugins/` reloads the plugin. If the bar doe
 - Locations: click a star to favorite a region (favorites stay at the top of the list)
 
 The plugin registers Quickshell IPC target `pia.omarchy` with `open`, `close`, `toggle`, `connect`, `disconnect`, and `refresh`.
+
+## Update
+
+```bash
+omarchy plugin update pia.omarchy
+```
 
 ## Remove
 

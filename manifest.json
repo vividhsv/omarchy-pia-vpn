@@ -5,6 +5,8 @@
   "version": "0.1.0",
   "author": "PIA VPN for Omarchy contributors",
   "license": "MIT",
+  "homepage": "https://github.com/vividhsv/omarchy-pia-vpn",
+  "repository": "https://github.com/vividhsv/omarchy-pia-vpn",
   "description": "Omarchy bar plugin for Private Internet Access. Wraps the official PIA daemon through piactl.",
   "kinds": [
     "bar-widget"
