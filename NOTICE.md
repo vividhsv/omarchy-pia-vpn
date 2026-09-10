@@ -14,4 +14,6 @@ Upstream:
 - PIA manual connection scripts (API reference only): https://github.com/pia-foss/manual-connections
 - Omarchy shell plugin contract: https://omarchy.org/manual/shell-plugins/
 
+The Locations map land silhouette is derived from [Natural Earth](https://www.naturalearthdata.com/) 110m land, which is in the public domain. Region coordinates are read at runtime from the official PIA daemon through `piactl`; this plugin does not redistribute PIA’s GPS table.
+
 Install the official client separately (`piavpn-bin` on Arch / Omarchy).

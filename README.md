@@ -13,6 +13,7 @@ This is an independent community project. It is **not affiliated with, endorsed 
 - Protocol (WireGuard / OpenVPN), port forwarding, LAN bypass, and kill switch
 - First-run installer that opens a terminal for `omarchy pkg aur add piavpn-bin`
 - Live down/up sparkline on Home while WireGuard is connected (reads `/sys/class/net/wgpia0`)
+- World map on Locations with a pin per region; the connected region is green, and clicking a pin connects there
 
 ## Requirements
 
