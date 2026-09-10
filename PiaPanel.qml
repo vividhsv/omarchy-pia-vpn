@@ -47,7 +47,7 @@ Panel {
     open: root.opened
     focusTarget: workspace
     contentWidth: fittedContentWidth(Style.space(400))
-    contentHeight: fittedContentHeight(Style.space(560), Style.space(560))
+    contentHeight: fittedContentHeight(Style.space(620), Style.space(620))
 
     PiaWorkspace {
       id: workspace

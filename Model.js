@@ -327,6 +327,19 @@ function mappableRegions(regions) {
   return result
 }
 
+function favoriteRegions(regions, favoriteIds) {
+  var list = Array.isArray(regions) ? regions : []
+  var result = []
+  for (var i = 0; i < list.length; i++) {
+    if (isFavorite(list[i] && list[i].id, favoriteIds)) result.push(list[i])
+  }
+  return result
+}
+
+function favoriteMappableRegions(regions, favoriteIds) {
+  return mappableRegions(favoriteRegions(regions, favoriteIds))
+}
+
 function regionLabel(id) {
   var value = trim(id)
   if (value === "") return "Unknown"
@@ -464,17 +477,81 @@ function appendSample(samples, value, limit) {
   return next
 }
 
-function filterRegions(regions, query) {
-  var needle = trim(query).toLowerCase()
+function normalizeFavoriteIds(ids) {
+  var list = Array.isArray(ids) ? ids : []
   var result = []
-  for (var i = 0; i < regions.length; i++) {
-    var region = regions[i]
-    if (!needle) {
-      result.push(region)
-      continue
-    }
-    var hay = (String(region.id || "") + " " + String(region.label || "")).toLowerCase()
-    if (hay.indexOf(needle) !== -1) result.push(region)
+  for (var i = 0; i < list.length; i++) {
+    var id = trim(list[i])
+    if (id === "" || result.indexOf(id) !== -1) continue
+    result.push(id)
   }
   return result
+}
+
+function parseFavorites(raw) {
+  var text = trim(raw)
+  if (text === "") return []
+  try {
+    var data = JSON.parse(text)
+  } catch (e) {
+    return []
+  }
+  if (Array.isArray(data)) return normalizeFavoriteIds(data)
+  if (data && typeof data === "object") return normalizeFavoriteIds(data.favorites)
+  return []
+}
+
+function serializeFavorites(ids) {
+  return JSON.stringify({ favorites: normalizeFavoriteIds(ids) }, null, 2) + "\n"
+}
+
+function isFavorite(id, ids) {
+  var rid = trim(id)
+  if (rid === "") return false
+  var list = Array.isArray(ids) ? ids : []
+  return list.indexOf(rid) !== -1
+}
+
+function toggleFavorite(id, ids) {
+  var rid = trim(id)
+  var list = normalizeFavoriteIds(ids)
+  if (rid === "") return list
+  var next = []
+  var found = false
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] === rid) {
+      found = true
+      continue
+    }
+    next.push(list[i])
+  }
+  if (!found) next.push(rid)
+  return next
+}
+
+function sortFavoriteRegions(regions, favoriteIds) {
+  var list = Array.isArray(regions) ? regions : []
+  var fav = []
+  var rest = []
+  for (var i = 0; i < list.length; i++) {
+    if (isFavorite(list[i] && list[i].id, favoriteIds)) fav.push(list[i])
+    else rest.push(list[i])
+  }
+  return fav.concat(rest)
+}
+
+function regionMatchesQuery(region, query) {
+  var needle = trim(query).toLowerCase()
+  if (needle === "") return true
+  var hay = (String(region && region.id || "") + " " + String(region && region.label || "")).toLowerCase()
+  return hay.indexOf(needle) !== -1
+}
+
+function filterRegions(regions, query, favoriteIds) {
+  var list = Array.isArray(regions) ? regions : []
+  var result = []
+  for (var i = 0; i < list.length; i++) {
+    if (regionMatchesQuery(list[i], query)) result.push(list[i])
+  }
+  return sortFavoriteRegions(result, Array.isArray(favoriteIds) ? favoriteIds : [])
 }

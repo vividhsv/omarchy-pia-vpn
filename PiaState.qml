@@ -9,6 +9,13 @@ Item {
 
   property var settings: ({})
 
+  readonly property string home: Quickshell.env("HOME")
+  readonly property string favoritesDir: home + "/.local/state/omarchy/pia.omarchy"
+  readonly property string favoritesPath: favoritesDir + "/favorites.json"
+  property var favoriteIds: []
+  property bool _favoritesLoaded: false
+  property bool _favoritesWriteQueued: false
+
   property bool installed: false
   property string piactlPath: ""
   property bool loggedIn: false
@@ -230,6 +237,33 @@ Item {
     if (!installed || regionId === "" || actionProcess.running) return
     region = regionId
     runAction([piactl(), "set", "region", regionId], "Setting region…")
+  }
+
+  function isFavorite(id) {
+    return Model.isFavorite(id, favoriteIds)
+  }
+
+  function toggleFavorite(id) {
+    favoriteIds = Model.toggleFavorite(id, favoriteIds)
+    scheduleFavoritesSave()
+  }
+
+  function applyFavorites(raw) {
+    var next = Model.parseFavorites(raw)
+    if (_favoritesLoaded && JSON.stringify(next) === JSON.stringify(favoriteIds)) return
+    favoriteIds = next
+    _favoritesLoaded = true
+  }
+
+  function scheduleFavoritesSave() {
+    if (!_favoritesLoaded) return
+    favoritesSaveTimer.restart()
+  }
+
+  function flushFavorites() {
+    if (!_favoritesLoaded) return
+    _favoritesWriteQueued = true
+    if (!ensureFavoritesDir.running) ensureFavoritesDir.running = true
   }
 
   function connectRegion(id) {
@@ -551,4 +585,36 @@ Item {
       if (exitCode === 0) root.applyTraffic(stdout)
     }
   }
+
+  FileView {
+    id: favoritesFile
+    path: root.favoritesPath
+    watchChanges: true
+    atomicWrites: true
+    printErrors: false
+    onLoaded: root.applyFavorites(text())
+    onLoadFailed: root.applyFavorites("")
+  }
+
+  Timer {
+    id: favoritesSaveTimer
+    interval: 200
+    repeat: false
+    onTriggered: root.flushFavorites()
+  }
+
+  Process {
+    id: ensureFavoritesDir
+    command: ["mkdir", "-p", root.favoritesDir]
+    running: false
+    onExited: {
+      if (root._favoritesWriteQueued) {
+        root._favoritesWriteQueued = false
+        favoritesFile.setText(Model.serializeFavorites(root.favoriteIds))
+      }
+      if (!root._favoritesLoaded) favoritesFile.reload()
+    }
+  }
+
+  Component.onCompleted: ensureFavoritesDir.running = true
 }
