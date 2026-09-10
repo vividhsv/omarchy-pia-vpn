@@ -88,6 +88,14 @@ def main():
     if killswitch is None:
         killswitch = settings.get("killSwitch")
     kv("killswitch", "" if killswitch is None else killswitch)
+
+    persist = settings.get("persistDaemon")
+    if persist is True:
+        kv("background", "true")
+    elif persist is False:
+        kv("background", "false")
+    else:
+        kv("background", "")
     return 0
 
 

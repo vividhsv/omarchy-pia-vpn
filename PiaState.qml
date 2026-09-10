@@ -29,6 +29,7 @@ Item {
   property bool allowLan: false
   property string portForward: ""
   property string killswitch: ""
+  property bool backgroundEnabled: false
   property var regions: []
   property string lastError: ""
   property string actionStatus: ""
@@ -168,6 +169,8 @@ Item {
       || _stableConnected
     username = parsed.username
     killswitch = parsed.killswitch
+    if (parsed.background === true || parsed.background === false)
+      backgroundEnabled = parsed.background
     if (!loggedIn) _desired = -1
     else if (_desired !== -1) {
       if (_desired === 1 && _stableConnected) _desired = -1
@@ -190,6 +193,7 @@ Item {
     allowLan = false
     portForward = ""
     killswitch = ""
+    backgroundEnabled = false
     regions = []
     _desired = -1
     _stableConnected = false
@@ -229,6 +233,7 @@ Item {
 
   function enableBackground() {
     if (!installed || actionProcess.running) return
+    backgroundEnabled = true
     runAction([piactl(), "background", "enable"], "Enabling background mode…")
   }
 
