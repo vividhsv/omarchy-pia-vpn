@@ -25,6 +25,10 @@ Column {
 
   signal locationsRequested()
 
+  readonly property var favoriteMapRegions: Model.favoriteMappableRegions(
+    vpnState ? vpnState.regions : [],
+    vpnState ? vpnState.favoriteIds : [])
+
   width: parent ? parent.width : implicitWidth
   spacing: Style.space(12)
 
@@ -113,6 +117,21 @@ Column {
       visible: homePage.vpnState && homePage.vpnState.username !== ""
       label: "Account"
       value: homePage.vpnState ? homePage.vpnState.username : ""
+    }
+  }
+
+  PiaWorldMap {
+    visible: homePage.favoriteMapRegions.length > 0
+    width: parent.width
+    height: width * Model.mapAspect()
+    regions: homePage.favoriteMapRegions
+    selectedId: homePage.vpnState ? homePage.vpnState.region : ""
+    connected: homePage.vpnState ? homePage.vpnState.connected : false
+    foreground: homePage.foreground
+    dim: homePage.dim
+    fontFamily: homePage.fontFamily
+    onRegionClicked: function(id) {
+      if (homePage.vpnState) homePage.vpnState.connectRegion(id)
     }
   }
 

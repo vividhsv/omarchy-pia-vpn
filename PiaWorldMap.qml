@@ -61,7 +61,7 @@ Item {
       readonly property bool hovered: root.hoveredId === modelData.id
       readonly property bool unmatched: {
         if (root.query === "" || pin.selected) return false
-        return Model.filterRegions([modelData], root.query).length === 0
+        return !Model.regionMatchesQuery(modelData, root.query)
       }
       readonly property var point: Model.projectEquirectangular(
         modelData.lat, modelData.lon, root.width, root.height)

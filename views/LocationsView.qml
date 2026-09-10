@@ -14,7 +14,10 @@ Column {
   property string fontFamily: Style.font.family
   property string query: ""
   readonly property bool searchFocused: searchField.activeFocus
-  readonly property var visibleRegions: Model.filterRegions(vpnState ? vpnState.regions : [], query)
+  readonly property var visibleRegions: Model.filterRegions(
+    vpnState ? vpnState.regions : [],
+    query,
+    vpnState ? vpnState.favoriteIds : [])
   readonly property bool hasRegions: vpnState && vpnState.regions.length > 0
   readonly property string mapCaption: {
     if (!vpnState || vpnState.regionLabel === "") return ""
@@ -108,6 +111,7 @@ Column {
 
         MouseArea {
           anchors.fill: parent
+          anchors.rightMargin: Style.space(10) + starHit.width
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           onClicked: {
@@ -124,8 +128,28 @@ Column {
           anchors.rightMargin: Style.space(10)
           spacing: Style.space(8)
 
+          Item {
+            width: mark.implicitWidth
+            height: Math.max(mark.implicitHeight, label.implicitHeight)
+            anchors.verticalCenter: parent.verticalCenter
+
+            Text {
+              id: mark
+              opacity: root.vpnState && root.vpnState.region === modelData.id ? 1 : 0
+              textFormat: Text.PlainText
+              text: "●"
+              color: root.vpnState && root.vpnState.connected
+                ? Model.connectedColor()
+                : root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              anchors.centerIn: parent
+            }
+          }
+
           Text {
-            width: parent.width - mark.implicitWidth - parent.spacing
+            id: label
+            width: parent.width - mark.parent.width - starHit.width - parent.spacing * 2
             textFormat: Text.PlainText
             text: modelData.label
             color: root.foreground
@@ -135,14 +159,33 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
           }
 
-          Text {
-            id: mark
-            visible: root.vpnState && root.vpnState.region === modelData.id
-            text: "●"
-            color: root.foreground
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
+          Item {
+            id: starHit
+            readonly property bool starred: Model.isFavorite(
+              modelData.id, root.vpnState ? root.vpnState.favoriteIds : [])
+            width: Math.max(star.implicitWidth, Style.space(16))
+            height: Math.max(star.implicitHeight, Style.space(16))
             anchors.verticalCenter: parent.verticalCenter
+            z: 2
+
+            Text {
+              id: star
+              anchors.centerIn: parent
+              textFormat: Text.PlainText
+              text: starHit.starred ? "★" : "☆"
+              color: starHit.starred ? root.foreground : root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                if (root.vpnState) root.vpnState.toggleFavorite(modelData.id)
+              }
+            }
           }
         }
       }

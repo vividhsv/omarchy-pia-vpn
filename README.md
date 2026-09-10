@@ -9,11 +9,12 @@ This is an independent community project. It is **not affiliated with, endorsed 
 - Bar icon for connected / connecting / disconnected
 - Left click opens the panel, right click connects or disconnects, middle click opens Home
 - Sign in without putting the password on a command line (temporary file, then shred)
-- Region list from `piactl get regions`
+- Region list from `piactl get regions`, with stars to favorite locations
 - Protocol (WireGuard / OpenVPN), port forwarding, LAN bypass, and kill switch
 - First-run installer that opens a terminal for `omarchy pkg aur add piavpn-bin`
 - Live down/up sparkline on Home while WireGuard is connected (reads `/sys/class/net/wgpia0`)
-- World map on Locations with a pin per region; the connected region is green, and clicking a pin connects there
+- World map on Locations with a pin per region; Home shows the same map with favorite pins only
+- Clicking a map pin connects there; the connected region is green
 
 ## Requirements
 
@@ -57,6 +58,7 @@ Saving QML under `~/.config/omarchy/plugins/` reloads the plugin. If the bar doe
 - `r` refresh status
 - `1`–`4` Home / Locations / Settings / About
 - `Esc` close
+- Locations: click a star to favorite a region (favorites stay at the top of the list)
 
 The plugin registers Quickshell IPC target `pia.omarchy` with `open`, `close`, `toggle`, `connect`, `disconnect`, and `refresh`.
 

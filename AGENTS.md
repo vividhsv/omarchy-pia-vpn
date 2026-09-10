@@ -23,7 +23,7 @@ scripts/pia-regions.sh python3: piactl regions + best-effort map coordinates
 scripts/piactl-login.sh  stdin → 0600 temp file → piactl login → shred
 scripts/install-backend.sh  AUR piavpn-bin + piavpn.service + background enable
 PiaSparkline.qml       WireGuard down/up sparkline on Home
-PiaWorldMap.qml        Locations world map + region pins
+PiaWorldMap.qml        world map + region pins (Locations all, Home favorites)
 assets/world-land.svg  public-domain equirectangular land (Antarctica omitted)
 ```
 
@@ -47,7 +47,8 @@ IPC target `pia.omarchy`: `open`, `close`, `show`, `hide`, `toggle`, `home`, `lo
 - Keys (when search/auth are not focused): `t` toggle, `r` refresh, `1`–`4` routes, `Esc` close. Left click toggles the panel, right click connects/disconnects (or opens if unsigned), middle click opens Home.
 - Optimistic chrome: `_desired` is `-1` (follow daemon), `1` (connecting), or `0` (disconnecting). `_stableConnected` flips only on Connected vs Disconnected so Connecting does not flicker the switch. If `connectVpn()` cannot run, clear `_desired`.
 - Status polling is `python3 scripts/pia-status.sh` (`installed=…` lines). Regions are `python3 scripts/pia-regions.sh` (`piactl get regions` plus best-effort `piactl -u dump daemon-data` coordinates). Mutating calls go through `runAction([piactl(), …])`, not `bash -lc`.
-- Locations map plots those coordinates on a public-domain world silhouette. `auto` has no pin. Do not vendor PIA’s GPS table.
+- Locations map plots those coordinates on a public-domain world silhouette. `auto` has no pin. Do not vendor PIA’s GPS table. Home reuses the map with favorite pins only.
+- Favorite regions persist in `~/.local/state/omarchy/pia.omarchy/favorites.json` (region ids only). Locations list: connected marker on the left, star on the right.
 - Home sparkline samples `/sys/class/net/wgpia0` via `python3 scripts/pia-traffic.sh` while the panel is open, WireGuard is selected, and a VPN IP is present. No extra privileges, still no custom tunnel.
 - Login: write user/pass to the login process stdin. Never put the password on argv, in logs, or in git.
 - Kill switch uses unstable `piactl -u applysettings`. Treat it as best-effort.
@@ -56,7 +57,7 @@ IPC target `pia.omarchy`: `open`, `close`, `show`, `hide`, `toggle`, `home`, `lo
 
 Use Omarchy tokens: `Style.space()`, `Style.font.*`, `Color.*`, `qs.Ui` (`Panel`, `PanelHero`, `Button`, `TextField`, `BorderSurface`, `PanelKeyCatcher`). Views take `vpnState`, `foreground`, `urgent`, `dim`, `fontFamily`. Set `textFormat: Text.PlainText`.
 
-Connected green is `Model.connectedColor()` (`#3d9a5f`) on the **in-panel** shield, switches, and the Locations map’s connected pin. The **bar icon stays themed** (`bar.barForeground`) — do not paint it green.
+Connected green is `Model.connectedColor()` (`#3d9a5f`) on the **in-panel** shield, switches, the Locations map’s connected pin, and the current-region marker in the Locations list. The **bar icon stays themed** (`bar.barForeground`) — do not paint it green.
 
 `ToggleSwitch` cannot show that green: Omarchy bakes `selected-color` to a theme hex. Use `PiaPowerSwitch` / `PiaToggle`.
 
