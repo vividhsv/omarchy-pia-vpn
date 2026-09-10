@@ -110,6 +110,10 @@ Item {
     return filePath("scripts/pia-traffic.sh")
   }
 
+  function regionsScript() {
+    return filePath("scripts/pia-regions.sh")
+  }
+
   function loginScript() {
     return filePath("scripts/piactl-login.sh")
   }
@@ -268,7 +272,7 @@ Item {
   function refreshRegions() {
     if (!installed || regionsProcess.running) return
     _regionsOutput = ""
-    regionsProcess.command = [piactl(), "get", "regions"]
+    regionsProcess.command = ["python3", regionsScript(), piactl()]
     regionsProcess.running = true
   }
 

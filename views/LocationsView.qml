@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Commons
 import qs.Ui
+import ".."
 import "../Model.js" as Model
 
 Column {
@@ -14,6 +15,13 @@ Column {
   property string query: ""
   readonly property bool searchFocused: searchField.activeFocus
   readonly property var visibleRegions: Model.filterRegions(vpnState ? vpnState.regions : [], query)
+  readonly property bool hasRegions: vpnState && vpnState.regions.length > 0
+  readonly property string mapCaption: {
+    if (!vpnState || vpnState.regionLabel === "") return ""
+    var label = vpnState.regionLabel
+    if (vpnState.connected) return "Connected from " + label
+    return "Selected: " + label
+  }
 
   width: parent ? parent.width : implicitWidth
   spacing: Style.space(10)
@@ -34,6 +42,34 @@ Column {
     font.family: root.fontFamily
     font.pixelSize: Style.font.heading
     font.bold: true
+  }
+
+  PiaWorldMap {
+    id: worldMap
+    visible: root.hasRegions
+    width: parent.width
+    height: width * Model.mapAspect()
+    regions: root.vpnState ? root.vpnState.regions : []
+    selectedId: root.vpnState ? root.vpnState.region : ""
+    connected: root.vpnState ? root.vpnState.connected : false
+    query: root.query
+    foreground: root.foreground
+    dim: root.dim
+    fontFamily: root.fontFamily
+    onRegionClicked: function(id) {
+      if (root.vpnState) root.vpnState.connectRegion(id)
+    }
+  }
+
+  Text {
+    visible: root.hasRegions && root.mapCaption !== ""
+    width: parent.width
+    textFormat: Text.PlainText
+    text: root.mapCaption
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
   }
 
   TextField {
