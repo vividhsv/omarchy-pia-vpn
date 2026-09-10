@@ -53,6 +53,16 @@ Column {
   }
 
   Text {
+    width: parent.width
+    textFormat: Text.PlainText
+    text: "https://github.com/vividhsv/omarchy-pia-vpn"
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.bodySmall
+    wrapMode: Text.WrapAnywhere
+  }
+
+  Text {
     visible: root.vpnState && root.vpnState.piactlPath !== ""
     width: parent.width
     textFormat: Text.PlainText

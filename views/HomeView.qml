@@ -178,7 +178,7 @@ Column {
 
   Button {
     width: parent.width
-    text: "Choose location"
+    text: "Change location"
     foreground: homePage.foreground
     fontFamily: homePage.fontFamily
     bordered: true

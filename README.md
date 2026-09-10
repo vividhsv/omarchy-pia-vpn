@@ -4,6 +4,10 @@ A native Omarchy Quattro bar plugin for [Private Internet Access](https://privat
 
 This is an independent community project. It is **not affiliated with, endorsed by, or supported by** Private Internet Access, Inc. or Omarchy.
 
+<p align="center">
+  <img src="screenshot.png" alt="PIA VPN Home panel, connected" width="360">
+</p>
+
 ## Features
 
 - Bar icon for connected / connecting / disconnected
