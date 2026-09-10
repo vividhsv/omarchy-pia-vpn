@@ -34,16 +34,44 @@ Item {
   readonly property bool connected: _desired === -1 ? _stableConnected : (_desired === 1)
   readonly property bool connecting: _desired === 1 && !_stableConnected
   readonly property bool disconnecting: _desired === 0 && _stableConnected
+  readonly property bool hasVpnIp: vpnIp !== ""
+  readonly property string statusIconState: {
+    if (hasVpnIp && _stableConnected && _desired !== 0)
+      return "connected"
+    if (connecting || disconnecting || Model.isConnecting(connectionState)
+        || Model.isDisconnecting(connectionState)
+        || (Model.isConnected(connectionState) && !hasVpnIp)
+        || (_stableConnected && !hasVpnIp))
+      return "connecting"
+    return "disconnected"
+  }
   readonly property string statusText: {
     if (!installed) return "Not installed"
     if (!loggedIn) return "Signed out"
-    return connected ? "Connected" : "Disconnected"
+    if (statusIconState === "connecting")
+      return disconnecting || Model.isDisconnecting(connectionState) ? "Disconnecting" : "Connecting"
+    return statusIconState === "connected" ? "Connected" : "Disconnected"
   }
-  readonly property string statusIconState: connected ? "connected" : "disconnected"
   readonly property bool busy: actionProcess.running || loginProcess.running || regionsProcess.running
   readonly property bool killswitchKnown: killswitch !== ""
   readonly property string regionLabel: Model.regionLabel(region)
   readonly property string protocolLabel: Model.protocolLabel(protocol)
+  readonly property bool wireguard: String(protocol).toLowerCase() === "wireguard"
+  readonly property bool trafficActive: wireguard && hasVpnIp && trafficWatch
+
+  property bool trafficWatch: false
+  property bool trafficIfaceUp: false
+  property bool trafficReady: false
+  property real trafficRxRate: 0
+  property real trafficTxRate: 0
+  property real trafficRxTotal: 0
+  property real trafficTxTotal: 0
+  property var trafficRxSamples: []
+  property var trafficTxSamples: []
+  property real _prevRxBytes: -1
+  property real _prevTxBytes: -1
+  property real _prevTrafficAt: 0
+  property string _trafficOutput: ""
 
   property string _statusOutput: ""
   property string _actionOutput: ""
@@ -78,6 +106,10 @@ Item {
     return filePath("scripts/pia-status.sh")
   }
 
+  function trafficScript() {
+    return filePath("scripts/pia-traffic.sh")
+  }
+
   function loginScript() {
     return filePath("scripts/piactl-login.sh")
   }
@@ -108,10 +140,10 @@ Item {
     }
     piactlPath = parsed.piactl || piactlPath
     if (parsed.connectionState !== "") connectionState = parsed.connectionState
-    if (Model.isConnected(connectionState)) _stableConnected = true
+    vpnIp = parsed.vpnIp === "Unknown" ? "" : parsed.vpnIp
+    if (Model.isConnected(connectionState) && vpnIp !== "") _stableConnected = true
     else if (Model.isDisconnected(connectionState)) _stableConnected = false
     region = parsed.region
-    vpnIp = parsed.vpnIp === "Unknown" ? "" : parsed.vpnIp
     pubIp = parsed.pubIp === "Unknown" ? "" : parsed.pubIp
     if (parsed.protocol !== "") protocol = parsed.protocol
     if (parsed.requestPortForward === true || parsed.requestPortForward === false)
@@ -151,6 +183,7 @@ Item {
     _desired = -1
     _stableConnected = false
     lastError = message || ""
+    clearTraffic()
   }
 
   function toggleConnection() {
@@ -280,6 +313,65 @@ Item {
     actionProcess.running = true
   }
 
+  function setTrafficWatch(enabled) {
+    trafficWatch = enabled === true
+  }
+
+  function clearTraffic(keepSession) {
+    if (trafficProcess.running) trafficProcess.running = false
+    trafficIfaceUp = false
+    trafficReady = false
+    trafficRxRate = 0
+    trafficTxRate = 0
+    trafficRxSamples = []
+    trafficTxSamples = []
+    _prevRxBytes = -1
+    _prevTxBytes = -1
+    _prevTrafficAt = 0
+    _trafficOutput = ""
+    if (keepSession !== true) {
+      trafficRxTotal = 0
+      trafficTxTotal = 0
+    }
+  }
+
+  function refreshTraffic() {
+    if (!trafficActive || trafficProcess.running) return
+    _trafficOutput = ""
+    trafficProcess.command = ["python3", trafficScript()]
+    trafficProcess.running = true
+  }
+
+  function applyTraffic(raw) {
+    var parsed = Model.parseTraffic(raw)
+    if (!parsed.ok) {
+      trafficIfaceUp = false
+      trafficReady = false
+      trafficRxRate = 0
+      trafficTxRate = 0
+      trafficRxSamples = []
+      trafficTxSamples = []
+      _prevRxBytes = -1
+      _prevTxBytes = -1
+      _prevTrafficAt = 0
+      return
+    }
+    trafficIfaceUp = true
+    var now = Date.now() / 1000
+    var next = Model.trafficRates(_prevRxBytes, _prevTxBytes, _prevTrafficAt, parsed.rx, parsed.tx, now)
+    _prevRxBytes = parsed.rx
+    _prevTxBytes = parsed.tx
+    _prevTrafficAt = now
+    if (!next.ready) return
+    trafficReady = true
+    trafficRxRate = next.rxRate
+    trafficTxRate = next.txRate
+    trafficRxTotal += next.rxBytes
+    trafficTxTotal += next.txBytes
+    trafficRxSamples = Model.appendSample(trafficRxSamples, next.rxRate, 60)
+    trafficTxSamples = Model.appendSample(trafficTxSamples, next.txRate, 60)
+  }
+
   Timer {
     id: refreshTimer
     interval: root.refreshIntervalSec * 1000
@@ -295,6 +387,17 @@ Item {
     repeat: false
     onTriggered: root.refresh()
   }
+
+  Timer {
+    id: trafficTimer
+    interval: 1000
+    repeat: true
+    running: root.trafficActive
+    triggeredOnStart: true
+    onTriggered: root.refreshTraffic()
+  }
+
+  onTrafficActiveChanged: if (!trafficActive) clearTraffic(wireguard && hasVpnIp)
 
   Timer {
     id: actionStatusTimer
@@ -425,6 +528,23 @@ Item {
         root.actionStatus = ""
         Qt.callLater(function() { root.enableBackground() })
       }
+    }
+  }
+
+  Process {
+    id: trafficProcess
+    running: false
+    command: []
+    stdout: StdioCollector {
+      id: trafficStdout
+      waitForEnd: true
+      onStreamFinished: root._trafficOutput = text
+    }
+    stderr: StdioCollector { waitForEnd: true }
+    onExited: function(exitCode) {
+      if (!root.trafficActive) return
+      var stdout = String(trafficStdout.text || root._trafficOutput || "")
+      if (exitCode === 0) root.applyTraffic(stdout)
     }
   }
 }

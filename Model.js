@@ -156,6 +156,62 @@ function elide(text, max) {
   return value.length > limit ? value.substring(0, limit - 1) + "…" : value
 }
 
+function parseTraffic(raw) {
+  var result = { ok: false, rx: 0, tx: 0 }
+  var lines = String(raw || "").split("\n")
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i]
+    var eq = line.indexOf("=")
+    if (eq < 1) continue
+    var key = line.substring(0, eq)
+    var value = line.substring(eq + 1)
+    if (key === "ok") result.ok = value === "true"
+    else if (key === "rx") result.rx = Number(value)
+    else if (key === "tx") result.tx = Number(value)
+  }
+  if (!isFinite(result.rx) || result.rx < 0) result.rx = 0
+  if (!isFinite(result.tx) || result.tx < 0) result.tx = 0
+  return result
+}
+
+function formatBytes(bytes) {
+  var n = Number(bytes)
+  if (!isFinite(n) || n < 0) n = 0
+  if (n < 1024) return Math.round(n) + " B"
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB"
+  if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + " MB"
+  return (n / (1024 * 1024 * 1024)).toFixed(2) + " GB"
+}
+
+function formatRate(bytesPerSec) {
+  return formatBytes(bytesPerSec) + "/s"
+}
+
+function trafficRates(prevRx, prevTx, prevAt, rx, tx, now) {
+  var dt = Number(now) - Number(prevAt)
+  if (!(prevAt > 0) || dt <= 0 || dt > 5 || rx < prevRx || tx < prevTx) {
+    return { ready: false, rxRate: 0, txRate: 0, rxBytes: 0, txBytes: 0 }
+  }
+  var rxBytes = Math.max(0, rx - prevRx)
+  var txBytes = Math.max(0, tx - prevTx)
+  return {
+    ready: true,
+    rxRate: rxBytes / dt,
+    txRate: txBytes / dt,
+    rxBytes: rxBytes,
+    txBytes: txBytes
+  }
+}
+
+function appendSample(samples, value, limit) {
+  var next = Array.isArray(samples) ? samples.slice() : []
+  var n = Number(value)
+  next.push(isFinite(n) && n > 0 ? n : 0)
+  var cap = limit || 60
+  while (next.length > cap) next.shift()
+  return next
+}
+
 function filterRegions(regions, query) {
   var needle = trim(query).toLowerCase()
   var result = []

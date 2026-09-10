@@ -20,6 +20,7 @@ Panel {
     if (vpnState) {
       vpnState.refresh()
       if (vpnState.installed && vpnState.loggedIn) vpnState.refreshRegions()
+      if (typeof vpnState.setTrafficWatch === "function") vpnState.setTrafficWatch(true)
     }
     controller.show()
     Qt.callLater(workspace.focusInitial)
@@ -34,6 +35,7 @@ Panel {
 
   onOpenedChanged: {
     if (bar && "centerHoverRevealSuppressed" in bar) bar.centerHoverRevealSuppressed = opened
+    if (vpnState && typeof vpnState.setTrafficWatch === "function") vpnState.setTrafficWatch(opened)
     if (opened) Qt.callLater(workspace.focusInitial)
   }
 
