@@ -23,7 +23,8 @@ function parseStatus(raw) {
     portForward: "",
     loggedIn: false,
     username: "",
-    killswitch: ""
+    killswitch: "",
+    background: null
   }
   var text = String(raw || "")
   if (text === "") {
@@ -56,6 +57,10 @@ function parseStatus(raw) {
     else if (key === "loggedin") result.loggedIn = value === "true"
     else if (key === "username") result.username = value
     else if (key === "killswitch") result.killswitch = value
+    else if (key === "background") {
+      if (value === "true") result.background = true
+      else if (value === "false") result.background = false
+    }
   }
   return result
 }

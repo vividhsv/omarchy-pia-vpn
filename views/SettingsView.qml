@@ -139,14 +139,18 @@ Column {
   PanelSeparator { foreground: root.foreground }
 
   Button {
+    visible: !root.vpnState || !root.vpnState.backgroundEnabled
     width: parent.width
     text: "Enable background mode"
     foreground: root.foreground
     fontFamily: root.fontFamily
+    bordered: true
+    enabled: root.vpnState && !root.vpnState.busy
     onClicked: if (root.vpnState) root.vpnState.enableBackground()
   }
 
   Text {
+    visible: !root.vpnState || !root.vpnState.backgroundEnabled
     width: parent.width
     textFormat: Text.PlainText
     text: "Background mode keeps the daemon active when the official GUI is closed. Required for connect from this plugin."
