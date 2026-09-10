@@ -12,8 +12,7 @@ This is an independent community project. It is **not affiliated with, endorsed 
 - Region list from `piactl get regions`
 - Protocol (WireGuard / OpenVPN), port forwarding, LAN bypass, and kill switch
 - First-run installer that opens a terminal for `omarchy pkg aur add piavpn-bin`
-
-There is no live traffic graph in this version. When the daemon is on WireGuard, a later panel graph can sample `/sys/class/net/wgpia0` without leaving `piactl`.
+- Live down/up sparkline on Home while WireGuard is connected (reads `/sys/class/net/wgpia0`)
 
 ## Requirements
 
