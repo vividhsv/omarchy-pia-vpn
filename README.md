@@ -53,6 +53,7 @@ Background mode is required so the daemon stays up without the official GUI.
 ### Local development
 
 ```bash
+python3 scripts/check-release-tree.py
 omarchy plugin validate .
 mkdir -p ~/.config/omarchy/plugins
 ln -sfn "$(pwd)" ~/.config/omarchy/plugins/pia.omarchy
