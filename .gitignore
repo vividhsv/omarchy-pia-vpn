@@ -5,3 +5,27 @@
 *.swp
 __pycache__/
 *.pyc
+
+# Agent-control files must not ship in the plugin checkout.
+AGENTS.md
+**/AGENTS.md
+CLAUDE.md
+**/CLAUDE.md
+GEMINI.md
+**/GEMINI.md
+COPILOT.md
+**/COPILOT.md
+AGENT.md
+**/AGENT.md
+.cursorrules
+**/.cursorrules
+.windsurfrules
+**/.windsurfrules
+.clinerules
+**/.clinerules
+.cursor/rules/
+.claude/
+.codex/
+.github/agents/
+.github/copilot-instructions.md
+.github/instructions/

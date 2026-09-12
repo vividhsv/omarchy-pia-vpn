@@ -1,0 +1,13 @@
+name: Release check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  plugin-tree:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject agent-control files
+        run: python3 scripts/check-release-tree.py
