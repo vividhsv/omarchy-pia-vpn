@@ -24,8 +24,10 @@ AGENT.md
 .clinerules
 **/.clinerules
 .cursor/rules/
+.cursor/commands/
 .claude/
 .codex/
+.agent/
 .github/agents/
 .github/copilot-instructions.md
 .github/instructions/

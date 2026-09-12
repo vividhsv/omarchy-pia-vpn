@@ -7,8 +7,10 @@ AGENT.md export-ignore
 .windsurfrules export-ignore
 .clinerules export-ignore
 .cursor/rules/** export-ignore
+.cursor/commands/** export-ignore
 .claude/** export-ignore
 .codex/** export-ignore
+.agent/** export-ignore
 .github/agents/** export-ignore
 .github/copilot-instructions.md export-ignore
 .github/instructions/** export-ignore
