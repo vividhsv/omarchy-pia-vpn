@@ -1,21 +1,15 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """Read piactl status as key=value lines for the Omarchy plugin."""
 
 import json
 import os
-import shutil
-import subprocess
 import sys
 
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
 
-def find_piactl():
-    found = shutil.which("piactl")
-    if found:
-        return found
-    for candidate in ("/opt/piavpn/bin/piactl", "/usr/local/bin/piactl"):
-        if os.access(candidate, os.X_OK):
-            return candidate
-    return None
+from pia_exec import DUMP_MAX_BYTES, find_piactl, run  # noqa: E402
 
 
 def kv(key, value):
@@ -24,30 +18,15 @@ def kv(key, value):
     print(f"{key}={text}")
 
 
-def run(argv, timeout=8):
-    try:
-        result = subprocess.run(
-            argv,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        stdout = (result.stdout or "").strip()
-        stderr = (result.stderr or "").strip()
-        return result.returncode, stdout, stderr
-    except subprocess.TimeoutExpired:
-        return 1, "", "timeout"
-    except OSError as exc:
-        return 1, "", str(exc)
-
-
 def get(piactl, kind):
-    code, stdout, _stderr = run([piactl, "get", kind])
+    code, stdout, _stderr = run([piactl, "get", kind], timeout=8, max_bytes=65536)
     return stdout if code == 0 else ""
 
 
 def dump_json(piactl, kind):
-    code, stdout, _stderr = run([piactl, "-u", "dump", kind], timeout=10)
+    code, stdout, _stderr = run(
+        [piactl, "-u", "dump", kind], timeout=10, max_bytes=DUMP_MAX_BYTES
+    )
     if code != 0 or not stdout:
         return None
     try:

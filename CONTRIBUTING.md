@@ -19,7 +19,7 @@ omarchy plugin validate .
 
 See [README.md](README.md) for install, update, and removal. The plugin id is `pia.omarchy`. `BarWidget.qml` is the only IPC entry; `PiaPanel.qml` must keep `manageIpc: false`.
 
-Mutating VPN calls go through `piactl` via `runAction`, not `bash -lc`. Login must never put the password on argv, in logs, or in git. Kill switch uses unstable `piactl -u applysettings` and is best-effort.
+Mutating VPN calls go through `piactl` via `scripts/pia_exec.py` (fixed binary paths, closed environment, output caps, process-group TERM→KILL). Login must never put the password on argv, in logs, or in git. Kill switch uses unstable `piactl -u applysettings` and is best-effort.
 
 ## UI
 

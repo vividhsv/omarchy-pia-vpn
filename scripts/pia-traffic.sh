@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """Read WireGuard counters from sysfs for the Omarchy PIA plugin."""
 
 import os
