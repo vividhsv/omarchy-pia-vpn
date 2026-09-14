@@ -104,10 +104,52 @@ Item {
     return n
   }
 
+  readonly property string pythonBin: "/usr/bin/python3"
+  readonly property string mkdirBin: "/usr/bin/mkdir"
+  readonly property string bashBin: "/usr/bin/bash"
+  readonly property string terminalLauncher: "/usr/bin/omarchy-launch-floating-terminal-with-presentation"
+  readonly property int statusCap: 65536
+  readonly property int regionsCap: 262144
+  readonly property int actionCap: 8192
+  readonly property int trafficCap: 4096
+  readonly property var closedEnv: ({
+    HOME: null,
+    USER: null,
+    LOGNAME: null,
+    XDG_RUNTIME_DIR: null,
+    XDG_CONFIG_HOME: null,
+    XDG_STATE_HOME: null,
+    XDG_DATA_HOME: null,
+    XDG_CACHE_HOME: null,
+    LANG: "C.UTF-8",
+    LC_ALL: "C.UTF-8",
+    PATH: "/usr/bin:/bin"
+  })
+
   function filePath(rel) {
     var url = Qt.resolvedUrl(rel).toString()
     if (url.indexOf("file://") === 0) url = url.slice(7)
     return url
+  }
+
+  function execScript() {
+    return filePath("scripts/pia_exec.py")
+  }
+
+  function jobCommand(argv, timeoutSec, maxBytes) {
+    var command = [
+      pythonBin, execScript(),
+      "--timeout", String(timeoutSec),
+      "--max-bytes", String(maxBytes),
+      "--"
+    ]
+    for (var i = 0; i < argv.length; i++) command.push(argv[i])
+    return command
+  }
+
+  function cappedText(text, maxBytes) {
+    var value = String(text || "")
+    return value.length > maxBytes ? value.substring(0, maxBytes) : value
   }
 
   function statusScript() {
@@ -131,7 +173,7 @@ Item {
   }
 
   function piactl() {
-    return piactlPath || "piactl"
+    return piactlPath
   }
 
   function refresh() {
@@ -139,7 +181,7 @@ Item {
     _statusOutput = ""
     _statusValid = true
     refreshing = true
-    statusProcess.command = ["python3", statusScript()]
+    statusProcess.command = [pythonBin, statusScript()]
     statusProcess.running = true
   }
 
@@ -213,6 +255,11 @@ Item {
         _desired = -1
         delayedRefresh.restart()
       }
+      return
+    }
+    if (!piactl()) {
+      _desired = -1
+      delayedRefresh.restart()
       return
     }
     _desired = 1
@@ -311,7 +358,8 @@ Item {
   function refreshRegions() {
     if (!installed || regionsProcess.running) return
     _regionsOutput = ""
-    regionsProcess.command = ["python3", regionsScript(), piactl()]
+    if (!piactl()) return
+    regionsProcess.command = [pythonBin, regionsScript(), piactl()]
     regionsProcess.running = true
   }
 
@@ -325,17 +373,23 @@ Item {
     }
     _loginOutput = ""
     _loginError = ""
+    if (!piactl()) {
+      lastError = "piactl binary not found"
+      return
+    }
+    _loginOutput = ""
+    _loginError = ""
     _loginUser = name
     _loginPass = secret
     actionStatus = "Signing in…"
-    loginProcess.command = ["bash", loginScript(), piactl()]
+    loginProcess.command = [pythonBin, loginScript(), piactl()]
     loginProcess.running = true
   }
 
   function installBackend() {
     Quickshell.execDetached([
-      "omarchy-launch-floating-terminal-with-presentation",
-      "bash",
+      terminalLauncher,
+      bashBin,
       installScript()
     ])
     actionStatus = "Installer opened in a terminal"
@@ -344,6 +398,7 @@ Item {
 
   function runAction(command, label) {
     if (actionProcess.running) return
+    if (!piactl()) return
     if (statusProcess.running) {
       _statusValid = false
       statusProcess.running = false
@@ -352,7 +407,7 @@ Item {
     _actionOutput = ""
     _actionError = ""
     actionStatus = label || ""
-    actionProcess.command = command
+    actionProcess.command = jobCommand(command, 20, actionCap)
     actionProcess.running = true
   }
 
@@ -381,7 +436,7 @@ Item {
   function refreshTraffic() {
     if (!trafficActive || trafficProcess.running) return
     _trafficOutput = ""
-    trafficProcess.command = ["python3", trafficScript()]
+    trafficProcess.command = [pythonBin, trafficScript()]
     trafficProcess.running = true
   }
 
@@ -449,31 +504,84 @@ Item {
     onTriggered: root.actionStatus = ""
   }
 
-  Timer {
-    id: pollWatchdog
-    interval: 20000
-    repeat: false
-    onTriggered: {
-      if (statusProcess.running) statusProcess.running = false
-      if (regionsProcess.running) regionsProcess.running = false
+  component ProcessWatch: Item {
+    id: watch
+    property var target: null
+    property int deadlineMs: 20000
+    property int killGraceMs: 2000
+    property int maxBytes: 65536
+
+    function arm() {
+      killTimer.stop()
+      termTimer.restart()
+    }
+
+    function disarm() {
+      termTimer.stop()
+      killTimer.stop()
+    }
+
+    function capLive(text) {
+      if (String(text || "").length > maxBytes && target && target.running) {
+        target.signal(15)
+        killTimer.restart()
+      }
+    }
+
+    Timer {
+      id: termTimer
+      interval: watch.deadlineMs
+      repeat: false
+      onTriggered: {
+        if (watch.target && watch.target.running) {
+          watch.target.signal(15)
+          killTimer.restart()
+        }
+      }
+    }
+
+    Timer {
+      id: killTimer
+      interval: watch.killGraceMs
+      repeat: false
+      onTriggered: {
+        if (watch.target && watch.target.running) {
+          watch.target.signal(9)
+          watch.target.running = false
+        }
+      }
     }
   }
+
+  ProcessWatch { id: statusWatch; target: statusProcess; deadlineMs: 20000; maxBytes: root.statusCap }
+  ProcessWatch { id: regionsWatch; target: regionsProcess; deadlineMs: 20000; maxBytes: root.regionsCap }
+  ProcessWatch { id: actionWatch; target: actionProcess; deadlineMs: 20000; maxBytes: root.actionCap }
+  ProcessWatch { id: loginWatch; target: loginProcess; deadlineMs: 20000; maxBytes: root.actionCap }
+  ProcessWatch { id: trafficWatchdog; target: trafficProcess; deadlineMs: 8000; maxBytes: root.trafficCap }
+  ProcessWatch { id: mkdirWatch; target: ensureFavoritesDir; deadlineMs: 5000; maxBytes: 1024 }
 
   Process {
     id: statusProcess
     running: false
     command: []
+    clearEnvironment: true
+    environment: root.closedEnv
     stdout: StdioCollector {
       id: statusStdout
-      waitForEnd: true
-      onStreamFinished: root._statusOutput = text
+      waitForEnd: false
+      onTextChanged: statusWatch.capLive(text)
+      onStreamFinished: root._statusOutput = root.cappedText(text, root.statusCap)
     }
-    stderr: StdioCollector { waitForEnd: true }
-    onStarted: pollWatchdog.restart()
+    stderr: StdioCollector {
+      waitForEnd: false
+      onTextChanged: statusWatch.capLive(text)
+    }
+    onStarted: statusWatch.arm()
     onExited: function(exitCode) {
+      statusWatch.disarm()
       root.refreshing = false
       if (!root._statusValid) return
-      var stdout = String(statusStdout.text || root._statusOutput || "")
+      var stdout = root.cappedText(statusStdout.text || root._statusOutput || "", root.statusCap)
       if (exitCode === 0) root.applyStatus(stdout)
       else if (!root.installed) {
         root.resetMissing("Could not read piactl status")
@@ -486,14 +594,22 @@ Item {
     id: regionsProcess
     running: false
     command: []
+    clearEnvironment: true
+    environment: root.closedEnv
     stdout: StdioCollector {
       id: regionsStdout
-      waitForEnd: true
-      onStreamFinished: root._regionsOutput = text
+      waitForEnd: false
+      onTextChanged: regionsWatch.capLive(text)
+      onStreamFinished: root._regionsOutput = root.cappedText(text, root.regionsCap)
     }
-    stderr: StdioCollector { waitForEnd: true }
+    stderr: StdioCollector {
+      waitForEnd: false
+      onTextChanged: regionsWatch.capLive(text)
+    }
+    onStarted: regionsWatch.arm()
     onExited: function(exitCode) {
-      var stdout = String(regionsStdout.text || root._regionsOutput || "")
+      regionsWatch.disarm()
+      var stdout = root.cappedText(regionsStdout.text || root._regionsOutput || "", root.regionsCap)
       if (exitCode === 0) root.regions = Model.parseRegions(stdout)
     }
   }
@@ -502,19 +618,25 @@ Item {
     id: actionProcess
     running: false
     command: []
+    clearEnvironment: true
+    environment: root.closedEnv
     stdout: StdioCollector {
       id: actionStdout
-      waitForEnd: true
-      onStreamFinished: root._actionOutput = text
+      waitForEnd: false
+      onTextChanged: actionWatch.capLive(text)
+      onStreamFinished: root._actionOutput = root.cappedText(text, root.actionCap)
     }
     stderr: StdioCollector {
       id: actionStderr
-      waitForEnd: true
-      onStreamFinished: root._actionError = text
+      waitForEnd: false
+      onTextChanged: actionWatch.capLive(text)
+      onStreamFinished: root._actionError = root.cappedText(text, root.actionCap)
     }
+    onStarted: actionWatch.arm()
     onExited: function(exitCode) {
-      var stdout = String(actionStdout.text || root._actionOutput || "")
-      var stderr = String(actionStderr.text || root._actionError || "")
+      actionWatch.disarm()
+      var stdout = root.cappedText(actionStdout.text || root._actionOutput || "", root.actionCap)
+      var stderr = root.cappedText(actionStderr.text || root._actionError || "", root.actionCap)
       if (exitCode !== 0) {
         root._desired = -1
         root._connectAfterAction = false
@@ -539,27 +661,33 @@ Item {
     id: loginProcess
     running: false
     command: []
+    clearEnvironment: true
+    environment: root.closedEnv
     stdinEnabled: true
     stdout: StdioCollector {
       id: loginStdout
-      waitForEnd: true
-      onStreamFinished: root._loginOutput = text
+      waitForEnd: false
+      onTextChanged: loginWatch.capLive(text)
+      onStreamFinished: root._loginOutput = root.cappedText(text, root.actionCap)
     }
     stderr: StdioCollector {
       id: loginStderr
-      waitForEnd: true
-      onStreamFinished: root._loginError = text
+      waitForEnd: false
+      onTextChanged: loginWatch.capLive(text)
+      onStreamFinished: root._loginError = root.cappedText(text, root.actionCap)
     }
     onStarted: {
+      loginWatch.arm()
       write(root._loginUser + "\n" + root._loginPass + "\n")
       root._loginUser = ""
       root._loginPass = ""
     }
     onExited: function(exitCode) {
+      loginWatch.disarm()
       root._loginUser = ""
       root._loginPass = ""
-      var stdout = String(loginStdout.text || root._loginOutput || "")
-      var stderr = String(loginStderr.text || root._loginError || "")
+      var stdout = root.cappedText(loginStdout.text || root._loginOutput || "", root.actionCap)
+      var stderr = root.cappedText(loginStderr.text || root._loginError || "", root.actionCap)
       if (exitCode !== 0) {
         root.lastError = Model.elide(stderr || stdout || "Sign in failed")
         root.actionStatus = root.lastError
@@ -578,15 +706,23 @@ Item {
     id: trafficProcess
     running: false
     command: []
+    clearEnvironment: true
+    environment: root.closedEnv
     stdout: StdioCollector {
       id: trafficStdout
-      waitForEnd: true
-      onStreamFinished: root._trafficOutput = text
+      waitForEnd: false
+      onTextChanged: trafficWatchdog.capLive(text)
+      onStreamFinished: root._trafficOutput = root.cappedText(text, root.trafficCap)
     }
-    stderr: StdioCollector { waitForEnd: true }
+    stderr: StdioCollector {
+      waitForEnd: false
+      onTextChanged: trafficWatchdog.capLive(text)
+    }
+    onStarted: trafficWatchdog.arm()
     onExited: function(exitCode) {
+      trafficWatchdog.disarm()
       if (!root.trafficActive) return
-      var stdout = String(trafficStdout.text || root._trafficOutput || "")
+      var stdout = root.cappedText(trafficStdout.text || root._trafficOutput || "", root.trafficCap)
       if (exitCode === 0) root.applyTraffic(stdout)
     }
   }
@@ -610,9 +746,13 @@ Item {
 
   Process {
     id: ensureFavoritesDir
-    command: ["mkdir", "-p", root.favoritesDir]
+    command: [mkdirBin, "-p", root.favoritesDir]
     running: false
+    clearEnvironment: true
+    environment: root.closedEnv
+    onStarted: mkdirWatch.arm()
     onExited: {
+      mkdirWatch.disarm()
       if (root._favoritesWriteQueued) {
         root._favoritesWriteQueued = false
         favoritesFile.setText(Model.serializeFavorites(root.favoriteIds))

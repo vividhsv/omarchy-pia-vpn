@@ -1,12 +1,16 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """List piactl regions with best-effort map coordinates for the Omarchy plugin."""
 
 import json
 import os
 import re
-import shutil
-import subprocess
 import sys
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+from pia_exec import DUMP_MAX_BYTES, find_piactl, run  # noqa: E402
 
 # piactl region id → a GPS key in modernRegionMeta.gps (before normalize).
 # Keep this small: suffix stripping handles -pf / -so / streaming-optimized.
@@ -221,35 +225,6 @@ def project_equirectangular(lat, lon, width, height):
     }
 
 
-def find_piactl(explicit=None):
-    if explicit:
-        return explicit
-    found = shutil.which("piactl")
-    if found:
-        return found
-    for candidate in ("/opt/piavpn/bin/piactl", "/usr/local/bin/piactl"):
-        if os.access(candidate, os.X_OK):
-            return candidate
-    return None
-
-
-def run(argv, timeout=8):
-    try:
-        result = subprocess.run(
-            argv,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        stdout = (result.stdout or "").strip()
-        stderr = (result.stderr or "").strip()
-        return result.returncode, stdout, stderr
-    except subprocess.TimeoutExpired:
-        return 1, "", "timeout"
-    except OSError as exc:
-        return 1, "", str(exc)
-
-
 def kv(key, value):
     text = "" if value is None else str(value)
     text = text.replace("\r", " ").replace("\n", " ").strip()
@@ -257,7 +232,9 @@ def kv(key, value):
 
 
 def load_gps(piactl):
-    code, stdout, _stderr = run([piactl, "-u", "dump", "daemon-data"], timeout=12)
+    code, stdout, _stderr = run(
+        [piactl, "-u", "dump", "daemon-data"], timeout=12, max_bytes=DUMP_MAX_BYTES
+    )
     if code != 0 or not stdout:
         return {}
     try:
@@ -270,7 +247,7 @@ def load_gps(piactl):
 
 
 def region_ids(piactl):
-    code, stdout, _stderr = run([piactl, "get", "regions"])
+    code, stdout, _stderr = run([piactl, "get", "regions"], timeout=8, max_bytes=262144)
     if code != 0:
         return None
     ids = []

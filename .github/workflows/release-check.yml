@@ -11,3 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Reject agent-control files
         run: python3 scripts/check-release-tree.py
+      - name: Helper unit tests
+        run: |
+          python3 scripts/test-pia-exec.py
+          python3 scripts/test-region-coords.py
