@@ -15,9 +15,9 @@ FocusScope {
   property string route: "home"
   property var routeStack: ["home"]
 
-  readonly property bool installerVisible: !vpnState || !vpnState.installed
-  readonly property bool authVisible: !installerVisible && vpnState && !vpnState.loggedIn
-  readonly property bool inputViewVisible: installerVisible || authVisible
+  readonly property bool clientMissing: !vpnState || !vpnState.installed
+  readonly property bool authVisible: !clientMissing && vpnState && !vpnState.loggedIn
+  readonly property bool inputViewVisible: clientMissing || authVisible
   readonly property var rootRoutes: ["home", "locations", "settings", "about"]
   readonly property string selectedRoot: rootRoutes.indexOf(route) >= 0 ? route : String(routeStack[0] || "home")
   readonly property var navigationDestinations: [
@@ -67,7 +67,7 @@ FocusScope {
       else if (t === "4") root.setRoute("about")
     }
     onActivateRequested: {
-      if (root.installerVisible && vpnState) vpnState.installBackend()
+      if (root.clientMissing && vpnState) vpnState.refresh()
     }
 
     ColumnLayout {
@@ -109,7 +109,7 @@ FocusScope {
             width: parent.width
             height: item ? item.implicitHeight : 0
             sourceComponent: {
-              if (root.installerVisible) return installerComponent
+              if (root.clientMissing) return missingClientComponent
               if (root.authVisible) return authComponent
               switch (root.route) {
               case "locations": return locationsComponent
@@ -146,8 +146,8 @@ FocusScope {
   }
 
   Component {
-    id: installerComponent
-    InstallerView {
+    id: missingClientComponent
+    ClientMissingView {
       vpnState: root.vpnState
       foreground: root.foreground
       urgent: root.urgent

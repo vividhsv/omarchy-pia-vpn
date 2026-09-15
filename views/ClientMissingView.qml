@@ -17,7 +17,7 @@ Column {
   Text {
     width: parent.width
     textFormat: Text.PlainText
-    text: "Install the official PIA client"
+    text: "Official PIA client required"
     color: root.foreground
     font.family: root.fontFamily
     font.pixelSize: Style.font.heading
@@ -28,38 +28,19 @@ Column {
   Text {
     width: parent.width
     textFormat: Text.PlainText
-    text: "This plugin wraps piactl. It does not ship a tunnel. Install the official Private Internet Access Linux client (AUR package piavpn-bin), enable the daemon, then sign in here."
+    text: "This plugin wraps piactl. It does not ship a tunnel and does not install the Private Internet Access client. Install that official Linux client yourself, enable its daemon, then run piactl background enable so the VPN can run without the official GUI."
     color: root.dim
     font.family: root.fontFamily
     font.pixelSize: Style.font.body
     wrapMode: Text.WordWrap
   }
 
-  Text {
-    width: parent.width
-    textFormat: Text.PlainText
-    text: "A terminal will open so you can read every command and enter your password if sudo asks."
-    color: root.dim
-    font.family: root.fontFamily
-    font.pixelSize: Style.font.bodySmall
-    wrapMode: Text.WordWrap
-  }
-
   Button {
     width: parent.width
-    text: "Install PIA backend"
+    text: "I already have piactl — refresh"
     foreground: root.foreground
     fontFamily: root.fontFamily
     bordered: true
-    enabled: root.vpnState && !root.vpnState.busy
-    onClicked: if (root.vpnState) root.vpnState.installBackend()
-  }
-
-  Button {
-    width: parent.width
-    text: "I already installed it — refresh"
-    foreground: root.foreground
-    fontFamily: root.fontFamily
     onClicked: if (root.vpnState) root.vpnState.refresh()
   }
 }

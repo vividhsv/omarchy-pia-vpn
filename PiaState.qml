@@ -106,8 +106,6 @@ Item {
 
   readonly property string pythonBin: "/usr/bin/python3"
   readonly property string mkdirBin: "/usr/bin/mkdir"
-  readonly property string bashBin: "/usr/bin/bash"
-  readonly property string terminalLauncher: "/usr/bin/omarchy-launch-floating-terminal-with-presentation"
   readonly property int statusCap: 65536
   readonly property int regionsCap: 262144
   readonly property int actionCap: 8192
@@ -166,10 +164,6 @@ Item {
 
   function loginScript() {
     return filePath("scripts/piactl-login.sh")
-  }
-
-  function installScript() {
-    return filePath("scripts/install-backend.sh")
   }
 
   function piactl() {
@@ -384,16 +378,6 @@ Item {
     actionStatus = "Signing in…"
     loginProcess.command = [pythonBin, loginScript(), piactl()]
     loginProcess.running = true
-  }
-
-  function installBackend() {
-    Quickshell.execDetached([
-      terminalLauncher,
-      bashBin,
-      installScript()
-    ])
-    actionStatus = "Installer opened in a terminal"
-    actionStatusTimer.restart()
   }
 
   function runAction(command, label) {
