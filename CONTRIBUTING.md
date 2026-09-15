@@ -2,7 +2,7 @@
 
 This is an independent Omarchy Quattro bar plugin for Private Internet Access. The UI runs inside `omarchy-shell`; the tunnel stays in the official PIA daemon and is driven only through `piactl`. Do not ship PIA binaries, trademarks, or a custom tunnel.
 
-Keep the independent-project disclaimer in README, NOTICE.md, About, and the installer.
+Keep the independent-project disclaimer in README, NOTICE.md, and About.
 
 ## Marketplace packaging
 

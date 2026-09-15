@@ -15,7 +15,6 @@ This is an independent community project. It is **not affiliated with, endorsed 
 - Sign in without putting the password on a command line (temporary file, then shred)
 - Region list from `piactl get regions`, with stars to favorite locations
 - Protocol (WireGuard / OpenVPN), port forwarding, LAN bypass, and kill switch
-- First-run installer that opens a terminal for `omarchy pkg aur add piavpn-bin`
 - Live down/up sparkline on Home while WireGuard is connected (reads `/sys/class/net/wgpia0`)
 - World map on Locations with a pin per region; Home shows the same map with favorite pins only
 - Clicking a map pin connects there; the connected region is green
@@ -23,8 +22,10 @@ This is an independent community project. It is **not affiliated with, endorsed 
 ## Requirements
 
 - Arch Linux with Omarchy Quattro 4.x
-- Official PIA client (`piavpn-bin` from the AUR), or install it from the plugin panel
-- `piactl` and `piavpn.service`
+- Official Private Internet Access Linux client, already installed and trusted by you (`piactl` on the system)
+- PIA background mode so the daemon can run without the official GUI: `piactl background enable`
+
+This plugin does not download, pin, or enable the official client. Install that package yourself, then enable the plugin.
 
 ## Install
 
@@ -40,15 +41,7 @@ To move an existing install:
 omarchy bar move pia.omarchy --section right
 ```
 
-Open the PIA icon and choose **Install PIA backend** if `piactl` is missing. That opens a terminal that runs:
-
-```bash
-omarchy pkg aur add piavpn-bin
-sudo systemctl enable --now piavpn.service
-piactl background enable
-```
-
-Background mode is required so the daemon stays up without the official GUI.
+If the panel says the official client is missing, install PIA’s Linux client on your own, enable background mode, then press refresh.
 
 ### Local development
 
@@ -85,13 +78,7 @@ omarchy plugin update pia.omarchy
 omarchy plugin remove pia.omarchy
 ```
 
-That only removes the frontend. To also remove the official PIA client:
-
-```bash
-systemctl --user is-active piavpn >/dev/null 2>&1 || true
-sudo systemctl disable --now piavpn.service
-sudo pacman -Rns piavpn-bin
-```
+That only removes this plugin. It does not remove the official PIA client.
 
 ## License
 
